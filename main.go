@@ -43,6 +43,14 @@ func run(in io.Reader, out io.Writer) {
 			continue
 		}
 		fmt.Fprint(out, board)
+		if winner := board.Winner(); winner != Nobody {
+			fmt.Fprintf(out, "%s wins!\n", winner)
+			return
+		}
+		if board.Full() {
+			fmt.Fprintln(out, "The board is full. It's a draw.")
+			return
+		}
 		turn = turn.opponent()
 	}
 }

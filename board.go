@@ -32,6 +32,36 @@ func (p Player) mark() string {
 	}
 }
 
+type Position struct {
+	Column, Row int
+}
+
+type Line [4]Position
+
+// lines is every run of four cells on the board: across, up, and both diagonals.
+var lines = winningLines()
+
+func winningLines() []Line {
+	directions := []Position{{1, 0}, {0, 1}, {1, 1}, {1, -1}}
+	var all []Line
+	for column := range Columns {
+		for row := range Rows {
+			for _, step := range directions {
+				end := Position{column + 3*step.Column, row + 3*step.Row}
+				if end.Column < 0 || end.Column >= Columns || end.Row < 0 || end.Row >= Rows {
+					continue
+				}
+				var line Line
+				for i := range line {
+					line[i] = Position{column + i*step.Column, row + i*step.Row}
+				}
+				all = append(all, line)
+			}
+		}
+	}
+	return all
+}
+
 // Board holds the discs with row 0 at the bottom, where a dropped disc lands first.
 type Board struct {
 	cells [Rows][Columns]Player
@@ -72,6 +102,30 @@ func (b *Board) Drop(column int, p Player) (int, error) {
 		}
 	}
 	return 0, ErrColumnFull
+}
+
+func (b Board) at(p Position) Player {
+	return b.cells[p.Row][p.Column]
+}
+
+// Winner returns the player with four in a line, or Nobody.
+func (b Board) Winner() Player {
+	for _, line := range lines {
+		first := b.at(line[0])
+		if first != Nobody && b.at(line[1]) == first && b.at(line[2]) == first && b.at(line[3]) == first {
+			return first
+		}
+	}
+	return Nobody
+}
+
+func (b Board) Full() bool {
+	for column := range Columns {
+		if b.cells[Rows-1][column] == Nobody {
+			return false
+		}
+	}
+	return true
 }
 
 func (b Board) String() string {
