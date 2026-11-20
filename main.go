@@ -5,10 +5,19 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"time"
 )
 
 func main() {
-	NewSession(os.Stdout, VersusComputer, uint64(time.Now().UnixNano())).Serve(os.Stdin)
+	path, err := statePath()
+	if err != nil {
+		fmt.Printf("Games won't be saved: %v\n", err)
+	}
+	memory, err := LoadMemory(path)
+	if err != nil {
+		fmt.Printf("The saved game in %s could not be read, so this is a fresh start.\n", path)
+	}
+	NewSession(os.Stdout, path, memory, uint64(time.Now().UnixNano())).Serve(os.Stdin)
 }

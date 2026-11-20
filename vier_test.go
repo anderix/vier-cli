@@ -44,7 +44,7 @@ func TestBottomRowPrintsLast(t *testing.T) {
 // session plays input in a two-player session and returns everything printed.
 func session(input string) string {
 	var out strings.Builder
-	NewSession(&out, TwoPlayers, 1).Serve(strings.NewReader(input))
+	NewSession(&out, "", Memory{Mode: TwoPlayers}, 1).Serve(strings.NewReader(input))
 	return out.String()
 }
 
@@ -220,7 +220,7 @@ func TestCommandsIgnoreCaseAndBlankLines(t *testing.T) {
 
 func againstComputer(seed uint64, input string) string {
 	var out strings.Builder
-	NewSession(&out, VersusComputer, seed).Serve(strings.NewReader(input))
+	NewSession(&out, "", Memory{}, seed).Serve(strings.NewReader(input))
 	return out.String()
 }
 
