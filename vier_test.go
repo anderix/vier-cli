@@ -36,9 +36,10 @@ func TestBottomRowPrintsLast(t *testing.T) {
 	}
 }
 
+// session plays input in a two-player session and returns everything printed.
 func session(input string) string {
 	var out strings.Builder
-	run(strings.NewReader(input), &out)
+	NewSession(&out, TwoPlayers, 1).Serve(strings.NewReader(input))
 	return out.String()
 }
 
@@ -189,7 +190,7 @@ func TestTheGameEndsInADraw(t *testing.T) {
 }
 
 func TestTheWinnerKeepsTheLastTurn(t *testing.T) {
-	game := NewGame()
+	game := NewGame(Red)
 	for _, column := range []int{0, 0, 1, 1, 2, 2, 3} {
 		game.Play(column)
 	}
@@ -209,5 +210,57 @@ func TestCommandsIgnoreCaseAndBlankLines(t *testing.T) {
 	got := session("\n  HELP \nShow\nQUIT\n")
 	if !strings.Contains(got, "Red> Red> "+help+"Red> "+emptyBoard+"Red> ") {
 		t.Errorf("unexpected session:\n%s", got)
+	}
+}
+
+func againstComputer(seed uint64, input string) string {
+	var out strings.Builder
+	NewSession(&out, VersusComputer, seed).Serve(strings.NewReader(input))
+	return out.String()
+}
+
+func TestSplitMix64MatchesVierDesktop(t *testing.T) {
+	rng := SplitMix64{state: 0}
+	for _, want := range []uint64{0xE220A8397B1DCDAF, 0x6E789E6AA1B965F4, 0x06C45D188009454F} {
+		if got := rng.Next(); got != want {
+			t.Fatalf("got %#x, want %#x", got, want)
+		}
+	}
+}
+
+func TestTheComputerAnswersEveryMove(t *testing.T) {
+	got := againstComputer(7, "4\nquit\n")
+	if strings.Count(got, "The computer plays ") != 1 || !strings.HasSuffix(got, "Red> ") {
+		t.Errorf("computer did not answer once:\n%s", got)
+	}
+}
+
+func TestTheSameSeedPlaysTheSameGame(t *testing.T) {
+	input := moves([]int{4, 4, 4, 3, 5, 2, 6}) + "quit\n"
+	if againstComputer(42, input) != againstComputer(42, input) {
+		t.Error("one seed played two different games")
+	}
+}
+
+func TestTheRandomMoveIsAlwaysOpen(t *testing.T) {
+	board := played(t, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2)
+	rng := SplitMix64{state: 3}
+	for range 1000 {
+		if column := randomMove(board, &rng); !board.CanDrop(column) {
+			t.Fatalf("picked full column %d", column+1)
+		}
+	}
+}
+
+func TestTheStarterAlternatesAgainstTheComputer(t *testing.T) {
+	got := againstComputer(5, "new\nquit\n")
+	if !strings.HasPrefix(got, emptyBoard+"Red> "+emptyBoard+"The computer plays ") {
+		t.Errorf("second game did not open with the computer:\n%s", got)
+	}
+}
+
+func TestTwoPlayersAlwaysStartWithRed(t *testing.T) {
+	if got := session("new\nnew\nquit\n"); strings.Contains(got, "Yellow> ") {
+		t.Errorf("a two-player game started with Yellow:\n%s", got)
 	}
 }

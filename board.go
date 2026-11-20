@@ -90,6 +90,10 @@ func (p Player) String() string {
 	}
 }
 
+func (b Board) CanDrop(column int) bool {
+	return column >= 0 && column < Columns && b.cells[Rows-1][column] == Nobody
+}
+
 // Drop puts p's disc on top of column, counted from 0, and returns the row it landed in.
 func (b *Board) Drop(column int, p Player) (int, error) {
 	if column < 0 || column >= Columns {
@@ -121,7 +125,7 @@ func (b Board) Winner() Player {
 
 func (b Board) Full() bool {
 	for column := range Columns {
-		if b.cells[Rows-1][column] == Nobody {
+		if b.CanDrop(column) {
 			return false
 		}
 	}

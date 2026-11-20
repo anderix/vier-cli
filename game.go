@@ -15,8 +15,8 @@ type Game struct {
 	Over   bool
 }
 
-func NewGame() Game {
-	return Game{Turn: Red}
+func NewGame(starter Player) Game {
+	return Game{Turn: starter}
 }
 
 // Play drops the current player's disc into column, counted from 0, and passes the turn.
