@@ -15,11 +15,7 @@ curl -fsSL https://excelano.com/apt/setup.sh | sudo sh
 sudo apt install vier-cli
 ```
 
-On Windows, with WinGet, so `winget upgrade` keeps it current:
-
-```powershell
-winget install Anderix.vier-cli
-```
+On Windows, unzip `vier-cli.exe` from the [latest release](https://github.com/anderix/vier-cli/releases/latest) into a folder on your `PATH`.
 
 Anywhere with a Go toolchain:
 
