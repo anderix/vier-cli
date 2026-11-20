@@ -235,10 +235,10 @@ func TestTheComputerAnswersEveryMove(t *testing.T) {
 	}
 }
 
-func TestTheSameSeedPlaysTheSameGame(t *testing.T) {
-	input := moves([]int{4, 4, 4, 3, 5, 2, 6}) + "quit\n"
-	if againstComputer(42, input) != againstComputer(42, input) {
-		t.Error("one seed played two different games")
+func TestTheComputerTakesTheWinItIsOffered(t *testing.T) {
+	got := againstComputer(5, "new\n1\n1\n1\nquit\n")
+	if !strings.Contains(got, "The computer wins.") {
+		t.Errorf("computer let a win go:\n%s", got)
 	}
 }
 

@@ -111,7 +111,7 @@ func (s *Session) computerTurn() {
 	if s.mode != VersusComputer || s.game.Over || s.game.Turn != Yellow {
 		return
 	}
-	column := randomMove(s.game.Board, &s.rng)
+	column := BestMove(s.game.Board, Yellow)
 	s.game.Play(column)
 	fmt.Fprintf(s.out, "The computer plays %d.\n", column+1)
 	fmt.Fprint(s.out, s.game.Board)

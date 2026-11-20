@@ -41,6 +41,16 @@ type Line [4]Position
 // lines is every run of four cells on the board: across, up, and both diagonals.
 var lines = winningLines()
 
+// linesThrough lists, for each cell, the lines of four that pass through it.
+var linesThrough = func() (table [Rows][Columns][]Line) {
+	for _, line := range lines {
+		for _, cell := range line {
+			table[cell.Row][cell.Column] = append(table[cell.Row][cell.Column], line)
+		}
+	}
+	return table
+}()
+
 func winningLines() []Line {
 	directions := []Position{{1, 0}, {0, 1}, {1, 1}, {1, -1}}
 	var all []Line
@@ -121,6 +131,20 @@ func (b Board) Winner() Player {
 		}
 	}
 	return Nobody
+}
+
+// CompletesFour reports whether the disc at p is part of four in a line.
+func (b Board) CompletesFour(p Position) bool {
+	player := b.at(p)
+	if player == Nobody {
+		return false
+	}
+	for _, line := range linesThrough[p.Row][p.Column] {
+		if b.at(line[0]) == player && b.at(line[1]) == player && b.at(line[2]) == player && b.at(line[3]) == player {
+			return true
+		}
+	}
+	return false
 }
 
 func (b Board) Full() bool {
