@@ -23,10 +23,15 @@ const help = `Type a column number, 1 to 7, to drop a disc there.
   new        start a new game
   computer   start a new game against the computer
   friend     start a new game for two players at this keyboard
+  easy       start a new game against the easy computer
+  medium     start a new game against the medium computer
+  hard       start a new game against the hard computer
   show       show the board again
   help       show this list
   quit       leave
 `
+
+var levels = map[string]Difficulty{"easy": Easy, "medium": Medium, "hard": Hard}
 
 // Session is everything that lasts from one game to the next. Against the
 // computer you play Red, and the side that starts alternates from game to game.
@@ -34,6 +39,7 @@ type Session struct {
 	out         io.Writer
 	game        Game
 	mode        Mode
+	difficulty  Difficulty
 	nextStarter Player
 	rng         SplitMix64
 }
@@ -65,6 +71,9 @@ func (s *Session) Serve(in io.Reader) {
 			s.start(VersusComputer)
 		case "friend":
 			s.start(TwoPlayers)
+		case "easy", "medium", "hard":
+			s.difficulty = levels[command]
+			s.start(VersusComputer)
 		case "show":
 			fmt.Fprint(s.out, s.game.Board)
 		default:
@@ -81,6 +90,11 @@ func (s *Session) start(mode Mode) {
 		s.nextStarter = starter.opponent()
 	}
 	s.game = NewGame(starter)
+	if mode == VersusComputer {
+		fmt.Fprintf(s.out, "A new game against the %s computer.\n", s.difficulty)
+	} else {
+		fmt.Fprintln(s.out, "A new game for two players.")
+	}
 	fmt.Fprint(s.out, s.game.Board)
 	s.computerTurn()
 }
@@ -111,7 +125,7 @@ func (s *Session) computerTurn() {
 	if s.mode != VersusComputer || s.game.Over || s.game.Turn != Yellow {
 		return
 	}
-	column := BestMove(s.game.Board, Yellow)
+	column := BestMove(s.game.Board, Yellow, s.difficulty, &s.rng)
 	s.game.Play(column)
 	fmt.Fprintf(s.out, "The computer plays %d.\n", column+1)
 	fmt.Fprint(s.out, s.game.Board)

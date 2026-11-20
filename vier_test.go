@@ -19,6 +19,11 @@ const emptyBoard = ` . . . . . . .
  1 2 3 4 5 6 7
 `
 
+const (
+	twoPlayerGame = "A new game for two players.\n"
+	easyGame      = "A new game against the easy computer.\n"
+)
+
 func TestEmptyBoardShowsSixRowsOfDots(t *testing.T) {
 	var board Board
 	if got := board.String(); got != emptyBoard {
@@ -44,13 +49,13 @@ func session(input string) string {
 }
 
 func TestQuitEndsTheSession(t *testing.T) {
-	if got, want := session("quit\nhello\n"), emptyBoard+"Red> "; got != want {
+	if got, want := session("quit\nhello\n"), twoPlayerGame+emptyBoard+"Red> "; got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}
 }
 
 func TestEndOfInputEndsTheSession(t *testing.T) {
-	if got, want := session(""), emptyBoard+"Red> \n"; got != want {
+	if got, want := session(""), twoPlayerGame+emptyBoard+"Red> \n"; got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}
 }
@@ -201,7 +206,7 @@ func TestTheWinnerKeepsTheLastTurn(t *testing.T) {
 
 func TestNewStartsAgainWithRed(t *testing.T) {
 	got := session(moves([]int{1, 1, 2, 2, 3, 3, 4}) + "new\n5\nquit\n")
-	if !strings.HasSuffix(got, "> "+emptyBoard+"Red> "+strings.Replace(emptyBoard, " . . . . . . .\n 1", " . . . . R . .\n 1", 1)+"Yellow> ") {
+	if !strings.HasSuffix(got, "> "+twoPlayerGame+emptyBoard+"Red> "+strings.Replace(emptyBoard, " . . . . . . .\n 1", " . . . . R . .\n 1", 1)+"Yellow> ") {
 		t.Errorf("new did not start a fresh game with Red:\n%s", got)
 	}
 }
@@ -236,25 +241,29 @@ func TestTheComputerAnswersEveryMove(t *testing.T) {
 }
 
 func TestTheComputerTakesTheWinItIsOffered(t *testing.T) {
-	got := againstComputer(5, "new\n1\n1\n1\nquit\n")
+	got := againstComputer(5, "hard\n1\n1\n1\nquit\n")
 	if !strings.Contains(got, "The computer wins.") {
 		t.Errorf("computer let a win go:\n%s", got)
 	}
 }
 
-func TestTheRandomMoveIsAlwaysOpen(t *testing.T) {
-	board := played(t, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2)
-	rng := SplitMix64{state: 3}
-	for range 1000 {
-		if column := randomMove(board, &rng); !board.CanDrop(column) {
-			t.Fatalf("picked full column %d", column+1)
-		}
+func TestTheSameSeedPlaysTheSameGame(t *testing.T) {
+	input := moves([]int{4, 4, 4, 3, 5, 2, 6}) + "quit\n"
+	if againstComputer(42, input) != againstComputer(42, input) {
+		t.Error("one seed played two different games")
+	}
+}
+
+func TestALevelStartsANewGameAgainstTheComputer(t *testing.T) {
+	got := session("hard\nquit\n")
+	if !strings.Contains(got, "Red> A new game against the hard computer.\n"+emptyBoard) {
+		t.Errorf("hard did not start a new game:\n%s", got)
 	}
 }
 
 func TestTheStarterAlternatesAgainstTheComputer(t *testing.T) {
 	got := againstComputer(5, "new\nquit\n")
-	if !strings.HasPrefix(got, emptyBoard+"Red> "+emptyBoard+"The computer plays ") {
+	if !strings.HasPrefix(got, easyGame+emptyBoard+"Red> "+easyGame+emptyBoard+"The computer plays ") {
 		t.Errorf("second game did not open with the computer:\n%s", got)
 	}
 }

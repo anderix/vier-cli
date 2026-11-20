@@ -9,10 +9,31 @@ import "math"
 // so the search meets good moves early and alpha-beta prunes more.
 var searchOrder = [Columns]int{3, 2, 4, 1, 5, 0, 6}
 
+const winScore = 1000
+
+type Difficulty int
+
 const (
-	winScore    = 1000
-	searchDepth = 4
+	Easy Difficulty = iota
+	Medium
+	Hard
 )
+
+func (d Difficulty) String() string {
+	return [...]string{"easy", "medium", "hard"}[d]
+}
+
+func (d Difficulty) searchDepth() int {
+	return [...]int{1, 2, 4}[d]
+}
+
+func (d Difficulty) randomMoveChance() float64 {
+	return [...]float64{0.65, 0.5, 0}[d]
+}
+
+func (d Difficulty) blocksImmediateWins() bool {
+	return d != Easy
+}
 
 func openColumns(board Board) []int {
 	var open []int
@@ -24,25 +45,27 @@ func openColumns(board Board) []int {
 	return open
 }
 
-func randomMove(board Board, rng *SplitMix64) int {
-	open := openColumns(board)
-	return open[rng.Below(len(open))]
-}
-
-// BestMove chooses player's column: a win if there is one, then a block,
-// then the best column a search of searchDepth moves can find.
-func BestMove(board Board, player Player) int {
+// BestMove chooses player's column: a win if there is one, then a block
+// above Easy, then sometimes a random column below Hard, and otherwise the
+// best column the difficulty's search can find. It draws from rng in the
+// same order vier-desktop does, so one seed plays the same game in both.
+func BestMove(board Board, player Player, difficulty Difficulty, rng *SplitMix64) int {
 	moves := openColumns(board)
 	if column, ok := immediateWin(board, player); ok {
 		return column
 	}
-	if column, ok := immediateWin(board, player.opponent()); ok {
-		return column
+	if difficulty.blocksImmediateWins() {
+		if column, ok := immediateWin(board, player.opponent()); ok {
+			return column
+		}
+	}
+	if rng.Unit() < difficulty.randomMoveChance() {
+		return moves[rng.Below(len(moves))]
 	}
 	best := moves[0]
 	alpha := -math.MaxInt32
 	for _, column := range moves {
-		if value := score(board, column, player, searchDepth, 0, -math.MaxInt32, -alpha); value > alpha {
+		if value := score(board, column, player, difficulty.searchDepth(), 0, -math.MaxInt32, -alpha); value > alpha {
 			alpha = value
 			best = column
 		}
