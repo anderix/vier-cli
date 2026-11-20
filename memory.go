@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 // Memory is what vier-cli keeps between runs: the last choices, whose turn
@@ -139,12 +140,17 @@ func (d *Difficulty) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// MarshalJSON writes the board as it is drawn: six rows, top row first.
+// fileMarks is the letter for each Player in the saved board, indexed by Player.
+// It is kept apart from how the board is drawn, so a new look for the discs
+// leaves saved games readable.
+const fileMarks = ".RY"
+
+// MarshalJSON writes the board as six rows, top row first.
 func (b Board) MarshalJSON() ([]byte, error) {
 	rows := make([]string, Rows)
 	for row := range Rows {
 		for column := range Columns {
-			rows[Rows-1-row] += b.cells[row][column].mark()
+			rows[Rows-1-row] += string(fileMarks[b.cells[row][column]])
 		}
 	}
 	return json.Marshal(rows)
@@ -164,15 +170,11 @@ func (b *Board) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("board row %q is not %d cells", text, Columns)
 		}
 		for column, mark := range text {
-			switch mark {
-			case 'R':
-				board.cells[Rows-1-i][column] = Red
-			case 'Y':
-				board.cells[Rows-1-i][column] = Yellow
-			case '.':
-			default:
+			player := strings.IndexRune(fileMarks, mark)
+			if player < 0 {
 				return fmt.Errorf("board row %q has %q in it", text, mark)
 			}
+			board.cells[Rows-1-i][column] = Player(player)
 		}
 	}
 	*b = board
