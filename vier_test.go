@@ -56,7 +56,7 @@ func TestEndOfInputEndsTheSession(t *testing.T) {
 
 func TestAnythingElseIsAnsweredInWords(t *testing.T) {
 	got := session("hello\nquit\n")
-	if !strings.Contains(got, "Red> Type a column from 1 to 7, or quit to leave.\nRed> ") {
+	if !strings.Contains(got, "Red> I don't know \"hello\". Type help for the commands.\nRed> ") {
 		t.Errorf("unexpected reply: %q", got)
 	}
 }
@@ -176,14 +176,38 @@ func moves(columns []int) string {
 
 func TestTheGameEndsWithAWinner(t *testing.T) {
 	got := session(moves([]int{1, 1, 2, 2, 3, 3, 4, 4}))
-	if !strings.HasSuffix(got, " 1 2 3 4 5 6 7\nRed wins!\n") {
+	if !strings.HasSuffix(got, " 1 2 3 4 5 6 7\nRed wins! Type new to play again.\n> The game is over. Type new to play again.\n> \n") {
 		t.Errorf("game did not end on Red's win:\n%s", got)
 	}
 }
 
 func TestTheGameEndsInADraw(t *testing.T) {
 	got := session(moves(drawn))
-	if !strings.HasSuffix(got, " 1 2 3 4 5 6 7\nThe board is full. It's a draw.\n") {
+	if !strings.HasSuffix(got, " 1 2 3 4 5 6 7\nThe board is full. It's a draw. Type new to play again.\n> \n") {
 		t.Errorf("game did not end in a draw:\n%s", got)
+	}
+}
+
+func TestTheWinnerKeepsTheLastTurn(t *testing.T) {
+	game := NewGame()
+	for _, column := range []int{0, 0, 1, 1, 2, 2, 3} {
+		game.Play(column)
+	}
+	if !game.Over || game.Winner != Red || game.Turn != Red {
+		t.Errorf("got over=%v winner=%s turn=%s", game.Over, game.Winner, game.Turn)
+	}
+}
+
+func TestNewStartsAgainWithRed(t *testing.T) {
+	got := session(moves([]int{1, 1, 2, 2, 3, 3, 4}) + "new\n5\nquit\n")
+	if !strings.HasSuffix(got, "> "+emptyBoard+"Red> "+strings.Replace(emptyBoard, " . . . . . . .\n 1", " . . . . R . .\n 1", 1)+"Yellow> ") {
+		t.Errorf("new did not start a fresh game with Red:\n%s", got)
+	}
+}
+
+func TestCommandsIgnoreCaseAndBlankLines(t *testing.T) {
+	got := session("\n  HELP \nShow\nQUIT\n")
+	if !strings.Contains(got, "Red> Red> "+help+"Red> "+emptyBoard+"Red> ") {
+		t.Errorf("unexpected session:\n%s", got)
 	}
 }
