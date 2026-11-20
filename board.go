@@ -3,7 +3,10 @@
 
 package main
 
-import "strings"
+import (
+	"errors"
+	"strings"
+)
 
 const (
 	Columns = 7
@@ -32,6 +35,43 @@ func (p Player) mark() string {
 // Board holds the discs with row 0 at the bottom, where a dropped disc lands first.
 type Board struct {
 	cells [Rows][Columns]Player
+}
+
+var (
+	ErrNoSuchColumn = errors.New("no such column")
+	ErrColumnFull   = errors.New("column is full")
+)
+
+func (p Player) opponent() Player {
+	if p == Red {
+		return Yellow
+	}
+	return Red
+}
+
+func (p Player) String() string {
+	switch p {
+	case Red:
+		return "Red"
+	case Yellow:
+		return "Yellow"
+	default:
+		return "Nobody"
+	}
+}
+
+// Drop puts p's disc on top of column, counted from 0, and returns the row it landed in.
+func (b *Board) Drop(column int, p Player) (int, error) {
+	if column < 0 || column >= Columns {
+		return 0, ErrNoSuchColumn
+	}
+	for row := range Rows {
+		if b.cells[row][column] == Nobody {
+			b.cells[row][column] = p
+			return row, nil
+		}
+	}
+	return 0, ErrColumnFull
 }
 
 func (b Board) String() string {
