@@ -1,0 +1,67 @@
+# Author: David M. Anderson
+# Built with AI assistance (Claude, Anthropic)
+#
+# Run by build-release (excelano/shipping) from a tagged commit. To try it
+# locally without touching GitHub: goreleaser release --snapshot --clean
+#
+# apt takes the Linux .debs and WinGet the Windows zips.
+
+version: 2
+
+builds:
+  - id: vier-cli
+    main: .
+    binary: vier-cli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.ShortCommit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: vier-cli
+    name_template: "vier-cli_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: ["zip"]
+    files:
+      - LICENSE
+      - README.md
+
+nfpms:
+  - id: vier-cli
+    package_name: vier-cli
+    file_name_template: "{{ .ConventionalFileName }}"
+    maintainer: David M. Anderson <david.anderson@excelano.com>
+    description: |
+      Four in a row in the terminal, against the computer or a friend at the
+      same keyboard. It reads a line and answers with a line, so it plays the
+      same in any terminal and over SSH, and it keeps the game in progress
+      between runs.
+    homepage: https://github.com/anderix/vier-cli
+    license: MIT
+    formats:
+      - deb
+    section: games
+    priority: optional
+    bindir: /usr/bin
+    contents:
+      - src: ./LICENSE
+        dst: /usr/share/doc/vier-cli/copyright
+      - src: ./README.md
+        dst: /usr/share/doc/vier-cli/README.md
+
+checksum:
+  name_template: "checksums.txt"
+
+release:
+  draft: false
+  prerelease: auto
